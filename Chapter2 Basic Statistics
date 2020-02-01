@@ -1,0 +1,241 @@
+#Chapter2 Basic Statistics
+#2.8 Exercises
+
+#####2.8.1#####
+
+set.seed(666)
+run <- function(alpha, nrep) {
+  result <- list()
+  
+  x <- matrix(rnorm(nrep*30), byrow = T, ncol = 30)  #生成随机数
+  wilcox <- function(d){    #定义一个对向量的函数，使其返回wilcox.test的pvalue
+    out <- wilcox.test(d)
+    return(out$p.value)
+  }
+  out <- apply(x, 1, wilcox)
+  
+  result$alpha <- length(out[out <= alpha]) / nrep #计算出alpha的估计值
+  
+  a <- matrix(sample(out, nrep*1000, replace = T), byrow = T, ncol = nrep) #boostrap重抽样
+  mean_a <- apply(a, 1, function(x) return(length(x[x <= alpha]) / nrep))
+  mean_a <- sort(mean_a)
+  p <- seq(0.001, 1, by = 0.001)
+  result$interval <- c(2*result$alpha - mean_a[which(p == 0.975)], 2*result$alpha - mean_a[which(p == 0.025)]) #得到置信区间
+  return(result)
+}
+
+#分别对alpha = 0.1, 0.05, 0.01运行结果
+a1 <- run(0.1, 1000)
+a2 <- run(0.05, 1000)
+a3 <- run(0.01, 1000)
+
+a1 <- c(a1$alpha, a1$interval[1], a1$interval[2])
+a2 <- c(a2$alpha, a2$interval[1], a2$interval[2])
+a3 <- c(a3$alpha, a3$interval[1], a3$interval[2])
+table <- rbind(a1, a2, a3)
+table <- cbind(c(0.1, 0.05, 0.01), table)
+colnames(table) <- c("alpha", "estimation", "lower", "upper")
+table
+
+
+######2.8.2#####
+
+set.seed(666666)
+#参数de表示自由度
+run2 <- function(alpha, nrep, de) {
+  result <- list()
+  
+  x <- matrix(rt(nrep*30, de), byrow = T, ncol = 30)  #生成随机数
+  wilcox <- function(d){    #定义一个对向量的函数，使其返回wilcox.test的pvalue
+    out <- wilcox.test(d)
+    return(out$p.value)
+  }
+  out <- apply(x, 1, wilcox)
+  
+  result$alpha <- length(out[out <= alpha]) / nrep #计算出来alpha的估计值
+  
+  a <- matrix(sample(out, nrep*1000, replace = T), byrow = T, ncol = nrep) #boostrap重抽样
+  mean_a <- apply(a, 1, function(x) return(length(x[x <= alpha]) / nrep))
+  mean_a <- sort(mean_a)
+  p <- seq(0.001, 1, by = 0.001)
+  result$interval <- c(2*result$alpha - mean_a[which(p == 0.975)], 2*result$alpha - mean_a[which(p == 0.025)]) #得到置信区间
+  return(result)
+}
+
+#输出结果
+alpha <- vector(length = 5)
+up <- vector(length = 5)
+low <- vector(length = 5)
+table <- NULL
+for(a in c(0.1, 0.05, 0.01)) {
+  i <- 1
+  for(de in c(1,2,3,5,10)){
+    out <- run2(a, 1000, de)
+    alpha[i] <- out$alpha
+    up[i] <- out$interval[2]
+    low[i] <- out$interval[1]
+    i <- i+1
+  }
+  result <- data.frame(alpha = rep(a, 5), degree = c(1,2,3,5,10), estimate = alpha, lower = low, upper = up)
+  table <- rbind(table, result)
+}
+table
+
+
+#####2.8.3#####
+
+set.seed(666666)
+x <- rnorm(25, 30, 5)
+x <- matrix(sample(x, 25*1000, replace = T), byrow =T, ncol = 25)
+xbar <- apply(x, 1, mean)
+
+se.xbar <- sd(xbar)
+se.xbar
+
+tcv <- qt(0.975, length(x) - 1)
+mean(x) + c(-1,1)*tcv*se.xbar
+
+mean(x) + c(-1, 1)*tcv*sd(x)/sqrt(length(x))
+
+
+#####2.8.4#####
+
+n = 30; df = 2; nsims = 10000; mu = .5; 
+collwil = rep(0,nsims) 
+collt = rep(0,nsims)
+
+# Create a matrix of samples from rt(n, df) + mu
+xbar <- matrix((rt(n*nsims, df) + mu), ncol = n)
+
+# write R functions that return the p-value of a test
+wilcox.teststat <- function(x) wilcox.test(x)$p.value
+t.teststat <- function(x) t.test(x)$p.value
+
+# call the function by row
+collwill <- apply(xbar, 1, wilcox.teststat)
+collt <- apply(xbar, 1, t.teststat)
+
+# collwill and collt are series of p-values from the simulation
+powwil = rep(0,nsims); powwil[collwil <= .05] = 1 
+powerwil = sum(powwil)/nsims 
+powt = rep(0,nsims); powt[collt <= .05] = 1 
+powert = sum(powt)/nsims
+
+
+#####2.8.5#####
+set.seed(6)
+x <- c(rep(1, 269), rep(0, 500-269))
+run <- function() {
+  x_sample <- matrix(sample(x, 500*1000, replace = T), byrow = T, ncol = 500)  #boostrap重抽样
+  x_barstar <- apply(x_sample, 1, mean)
+  
+  return(quantile(x_barstar, probs = c(0.05, 0.95), type = 1))  #90%置信区间
+}
+run()
+
+
+#####2.8.6#####
+
+school<-c(82,69,73,43,58,56,76,65)
+home<-c(63,42,74,37,51,43,80,62)                            
+response <- school - home 
+wilcox.test(response,alternative="two.side",conf.int=TRUE,conf.level = 0.9)
+
+t.test(response,alternative="two.side",conf.int=TRUE,conf.level = 0.9)
+
+
+#####2.8.7#####
+
+mySignAnalysis <- function(x, p, alt) {
+  # compute the statistic S+
+  xt <- x[x != 0]
+  nt <- length(xt)
+  ind <- rep(0,nt)
+  ind[xt > 0] <- 1
+  splus <- sum(ind)
+  # use binomial test
+  # return the p-value
+  return (binom.test(splus, nt, p, alternative = alt)$p.value)
+}
+
+
+#####2.8.8#####
+
+# using the R function wrote in 2.8.7
+school <- c(82,69,73,43,58,56,76,65)
+home <- c(63,42,74,37,51,43,80,62) 
+response <- school - home
+mySignAnalysis(response, 0.5, "greater")
+
+
+#####2.8.9#####
+
+school<-c(82,69,73,43,58,56,76,65)
+home<-c(63,42,74,37,51,43,80,82)                            # 最后一个数据由62改为82
+response <- school - home 
+wilcox.test(response,alternative="greater",conf.int=TRUE)   # signed-rank Wilcoxon检验
+
+t.test(response,alternative="greater",conf.int=TRUE)        # t检验
+
+
+#####2.8.10#####
+###参考答案一###
+rCN <- function(n,c,b)
+{
+  a <- rbinom(n,1,b)                 # 生成n个成功概率ε=b的伯努利变量
+  for(i in 1:n)
+  {
+    if(a[i]==0)                      # 根据取1或0, 将变量替换为N(0,1)或CN(16,0.25)
+      a[i] <- rnorm(1,0,1)
+    else
+      a[i] <- rnorm(1,0,c)
+  }
+  return(a)
+}
+n <- rnorm(100,0,1)
+cn <- rCN(100,16,0.25)
+par(mfrow = c(2,2))                  # 画出直方图和箱线图
+hist(cn,main="histogram of CN(16,0.25)")
+hist(n,main="histogram of N(0, 1)")
+boxplot(cn,main="boxplot of CN(16,0.25)")
+boxplot(n,main="boxplot of N(0, 1)")
+
+###参考答案二###
+#第一问#
+rcnorm=function(c,epsilon,n){
+  i=rbinom(n,1,epsilon)
+  z=rnorm(n)
+  (1-i)*z+c*i*z
+}
+#第二问#
+sample1<-rnorm(100)
+sample2<-rcnorm(16,0.25,100)
+par(mfrow=c(1,2))
+hist(sample1,main = "Histogram of N(0,1)");
+hist(sample2,main = "Histogram of CN(16,0.25)")
+
+
+######2.8.12#####
+# 总体服从标准正态分布
+W2<-c()                       # 储存Hodges–Lehmann统计量置信区间长度的平方
+T2<-c()                       # 储存t统计量置信区间长度的平方
+for (i in 1:10000) {
+  x1<-rnorm(30,0,1)
+  w<-wilcox.test(x1,conf.int=TRUE)
+  t<-t.test(x1,conf.int=TRUE)
+  W2[i]<-((w$conf.int)[2]-(w$conf.int)[1])^2
+  T2[i]<-((t$conf.int)[2]-(t$conf.int)[1])^2
+}
+mean(W2)/mean(T2)   
+
+#总体服从自由度为2的t分布
+W2<-c()                       # 储存Hodges–Lehmann统计量置信区间长度的平方
+T2<-c()                       # 储存t统计量置信区间长度的平方
+for (i in 1:10000) {
+  x1<-rt(30,2)
+  w<-wilcox.test(x1,conf.int=TRUE)
+  t<-t.test(x1,conf.int=TRUE)
+  W2[i]<-((w$conf.int)[2]-(w$conf.int)[1])^2
+  T2[i]<-((t$conf.int)[2]-(t$conf.int)[1])^2
+}
+mean(W2)/mean(T2)            # 计算置信区间长度平方的期望之比
