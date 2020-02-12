@@ -1,0 +1,104 @@
+#Chapter7 Regression2
+#7.9 Exercises
+
+#####7.9.1#####
+###(a)
+x = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20)
+y = c(5, 7, 6, 14, 14, 25, 29, 33, 31, 41, 75)
+y2 = c(5, 7, 6, 14, 14, 25, 29, 33, 31, 41, 20)
+
+library(hbrfit)
+library(quantreg)
+wilfit = rfit.default(y~x)
+HBRfit = hbrfit(formula = y~x)
+summary(wilfit)
+summary(HBRfit)
+
+plot(x,y)
+abline(wilfit, lwd=4, col="green")
+abline(HBRfit, lwd=1, col="red")
+legend("bottomright",legend = c("wilfit","hbrfit"), col = c("green","red"), lty=1,lwd=2)
+
+###(b)
+wilfit = rfit.default(y2~x)
+HBRfit = hbrfit(formula = y2~x)
+summary(wilfit)
+summary(HBRfit)
+
+plot(x,y2)
+abline(wilfit, lwd=4, col="green")
+abline(HBRfit, lwd=1, col="red")
+legend("bottomright",legend = c("wilfit","hbrfit"), col = c("green","red"), lty=1,lwd=2)
+
+
+#####7.9.3#####
+set.seed(123)
+m = 10000
+x = 1:20
+b_h = c()
+b_w = c()
+for(i in 1:m)
+{
+  e = rnorm(20,0,25)
+  y = 4*x+e
+  wilfit = rfit.default(y~x)
+  HBRfit = hbrfit(formula = y~x)
+  b_w = c(b_w, wilfit$coefficients[2])  # 取出系数的估计值
+  b_h = c(b_h, HBRfit$coefficients[2])
+}
+var(b_h)/var(b_w)
+
+
+#####7.9.4#####
+library(hbrfit)
+library(quantreg)
+
+set.seed(123)
+m = 10000
+x = 1:20
+h = c()      # 记录是否正确的向量，正确为1，错误为0
+w = c()
+t = 2.101    # 18个自由度下，t分布的97.5%分位数大致为2.101
+Lxx = 19*var(x)
+
+low = c()
+up = c()
+
+for(i in 1:m)
+{
+  e = rnorm(20,0,25)
+  y = 4*x+e
+  wilfit = rfit.default(y~x)
+  HBRfit = hbrfit(formula = y~x)
+  b_w = wilfit$coefficients[2]  # 取出系数的估计值
+  b_h = HBRfit$coefficients[2]
+  sd_y = sd(y)
+  
+  low = c(low,b_w-sd_y/sqrt(Lxx))
+  up = c(up,b_w+sd_y/sqrt(Lxx))
+  
+  if(abs(4-b_w)<t*sd_y/sqrt(Lxx)) # 计算真实值是否在置信区间内,是赋值为1，不是赋值为0
+    w=c(w,1)
+  else
+    w = c(w,0)
+  
+  if(abs(4-b_h)<t*sd_y/sqrt(Lxx))
+    h = c(h,1)
+  else
+    h = c(h,0)
+}
+hhhhh = data.frame(low=low,up = up)
+mean(h)   # HBR ﬁts对于β1参数估计95%置信区间的正确性
+mean(w)   # Wil ﬁts对于β1参数估计95%置信区间的正确性
+
+
+#####7.9.4补充训练#####
+###画图：模拟100次，画出每次的置信区间（竖线），观察有多少置信区间正确地包括了真值
+plot(0, xlim=c(0, 100), ylim=c(min(hhhhh)-0.2, max(hhhhh)+0.2), type="n")
+for (i in 1:100) {
+  if(hhhhh[i, 1]>4|hhhhh[i, 2]<4)
+    lines(x=rep(i, 2), y=c(hhhhh[i, 1], hhhhh[i, 2]),col = "red")
+  else
+    lines(x=rep(i, 2), y=c(hhhhh[i, 1], hhhhh[i, 2]))
+}
+abline(h=4)
