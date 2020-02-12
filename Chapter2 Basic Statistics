@@ -215,7 +215,46 @@ hist(sample1,main = "Histogram of N(0,1)");
 hist(sample2,main = "Histogram of CN(16,0.25)")
 
 
-######2.8.12#####
+#####2.8.11#####
+
+#编写函数生成一个带污染比例和污染强度的样本
+rCN <- function(n,c,eps)
+{
+  label <- sample(c(1,0),n,T,c(eps,1-eps)) # 生成成功概率ε=eps的伯努利变量
+  n.norm=sum(label)
+  n.cont=n-sum(label)
+  simdata=c(rnorm(n.norm),rnorm(n.cont)*c)
+  return(simdata)
+}
+
+#备择假设 theta 变化的时候输出经验power
+n = 100; #每次实验样本量
+nsims = 5000;#计算经验势所需要的实验次数
+eps = 0.25 ; #污染系数
+Theta=seq(0.05,5,0.1)
+n.Theta=length(Theta)
+Powerwil=NULL#存贮9次实验结果
+for (j in 1:n.Theta)
+{
+  collwil = rep(0,nsims); #存储变量：存储wilcoxon的p-值
+  for(i in 1:nsims)
+  {
+    theta=Theta[j]
+    x = rCN(n,16,0.25)+theta
+    wil = wilcox.test(x)
+    collwil[i] = wil$p.value
+  }
+
+  powwil = rep(0,nsims);
+  powwil[collwil <= .05] = 1
+  powerwil = sum(powwil)/nsims
+  Powerwil=c(Powerwil,powerwil)
+}
+Powerwil
+
+
+#####2.8.12#####
+
 # 总体服从标准正态分布
 W2<-c()                       # 储存Hodges–Lehmann统计量置信区间长度的平方
 T2<-c()                       # 储存t统计量置信区间长度的平方
