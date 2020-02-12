@@ -1,0 +1,45 @@
+#Chapter3 Two-Sample Problems
+#3.7 Exercises
+
+#####3.7.1#####
+library(Rfit)
+x = baseball[baseball$field==0,1]
+y = baseball[baseball$field==1,1]
+wilcox.test(x,y)
+
+
+#####3.7.3#####
+#由于数据quail2不存在，x和y分别用quail中的treat=1和treat=2代替
+library(Rfit)
+library(npsm)
+data <- quail2
+x <- data[data[[1]]==1, 2]
+y <- data[data[[1]]==0 ,2]
+
+#wilcox.testx(x,y)计算统计量T+并返回检验的p值
+wilcox.test(x, y, exact = FALSE,correct=FALSE)  #注意：参数correct=FALSE
+rank.test(x,y)      #rank.test(x,y)使用统计量T和p值
+
+
+#####3.7.4#####
+###(a)&(b)
+library(ggplot2)
+set.seed(666)
+x <- log(rf(20,1,.25)) 
+y <- log(rf(20,1,.25)) + 7.0
+z = c(rep("x",20),rep("y",20))
+mydata = data.frame(dat = c(x,y),z) # 构造一个数据框，方便作图
+ggplot(data = mydata, aes(x = z,y = dat))+geom_dotplot(binaxis='y', stackdir='center') # 画出点图
+
+###(c)
+z = c(rep(1,20),rep(2,20))
+mydata = data.frame(dat = c(x,y),z)   # Wilcoxon
+fit<-rfit(dat~z,data=mydata) 
+coef(summary(fit))
+
+fits<-rfit(dat~z,data=mydata,scores = bentscores1)  # bentscores1
+coef(summary(fits))
+
+fitlm<-lm(dat~z,data=mydata)   # LS
+coef(summary(fitlm))
+
