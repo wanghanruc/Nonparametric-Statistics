@@ -278,3 +278,51 @@ for (i in 1:10000) {
   T2[i]<-((t$conf.int)[2]-(t$conf.int)[1])^2
 }
 mean(W2)/mean(T2)            # 计算置信区间长度平方的期望之比
+
+
+#####2.8.14#####
+
+###(a)
+#方法一
+pbinom(16,75,0.3)
+
+#方法二：经验估计法
+p.a <- function(){
+  set.seed(888888)
+  nrep <- 10000
+  out <- vector(length = nrep)
+  for(i in 1:nrep){
+    x <- rbinom(75, 1, 0.3)
+    if(sum(x) <= 16){
+      out[i] <- 1
+    } else {
+      out[i] <- 0
+    }
+  }
+  return(sum(out)/nrep)
+}
+p.a()
+
+###(b)
+N=75#试验次数
+# n = 100; #每次实验样本量
+nsims = 10000;#计算经验势所需要的实验次数
+p = 0.25 ; #真值
+x = rbinom(nsims,75,0.25)
+sum(x<16)/nsims
+
+###(c)
+set <- seq(0.02,0.35,by = 0.01)
+Power<-NULL
+
+for(i in 1:length(set))
+{
+  p =set[i] ; #真值
+  x = rbinom(nsims,75,p)
+  power=sum(x<16)/nsims
+  Power=c(Power,power)
+}
+
+plot(set,Power,type="n")
+lines(set,Power)
+
