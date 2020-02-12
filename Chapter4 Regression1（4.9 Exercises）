@@ -1,0 +1,75 @@
+#Chapter4 Regression1
+#4.9 Exercises
+
+#####4.9.10#####
+###(a)
+library(npsm)
+data(cloud)
+plot(cloud)
+
+###(b)
+fit1 <- rfit(cloud.point ~ I8, data = cloud) #简单线性
+fit2 <- rfit(cloud.point ~ I8 + I(I8^2), data = cloud) #二阶
+fit3 <- rfit(cloud.point ~ I8 + +I(I8^2) + I(I8^3), data = cloud)#三阶
+#作图
+rs = rstudent(fit1); yhat = fitted.values(fit1); plot(yhat, rs, main = "linear")
+rs = rstudent(fit2); yhat = fitted.values(fit2); plot(yhat, rs, main = "quadratic polynomials")
+rs = rstudent(fit3); yhat = fitted.values(fit3); plot(yhat, rs, main = "cubic polynomials")
+
+###(c)
+deg <- polydeg(cloud$cloud.point, cloud$I8, 5, .05)
+deg$coll
+
+
+#####4.9.11#####
+###(a)
+data(energy)
+plot(energy$temp.diff, energy$output)
+
+###(b)
+deg <- polydeg(energy$output, energy$temp.diff, 6, .05)
+deg$coll
+
+###(c)
+summary(deg$fitf)
+
+#作出拟合图观察
+plot(energy$temp.diff, energy$output)
+lines(energy$temp.diff, fitted.values(deg$fitf))
+
+#作出学生化残差图观察
+rs = rstudent(deg$fitf); yhat = fitted.values(deg$fitf); plot(yhat, rs)
+
+
+#####4.9.13#####
+###(a)
+data("weather")
+plot(weather[,"year"], weather[,"totalsnow"], xlab = "year", ylab = "totalsnow")
+
+weather[which.min(weather[,"totalsnow"]),"year"] #降雪量最小
+weather[which.max(weather[,"totalsnow"]),"year"] #降雪量最大
+
+###(b)
+dat = data.frame("year" = weather[,"year"], "totalsnow" = weather[,"totalsnow"])
+dat = na.omit(dat)
+#Local LS Fit
+fit1 = loess(totalsnow ~ year, data = dat)
+#Robust loess
+fit2 = loess(totalsnow ~ year, data = dat, family = "symmetric")
+
+#作图比较
+plot(weather[,"year"], weather[,"totalsnow"], xlab = "year", ylab = "totalsnow")
+lines(dat$year, fitted.values(fit1))
+lines(dat$year, fitted.values(fit2), lty = 2)
+legend("topleft", legend = c('Local LS Fit','Robust losess Fit'),lty=c(1,2))
+
+###(c)
+Loess.residual = fit2$residuals; Loess.fit = fitted.values(fit2); plot(Loess.fit, Loess.residual)
+
+###(d)
+boxplot(Loess.residual)
+
+#找出三个outliner
+Loess.residual[order(-Loess.residual)][1:3]
+weather[c(17,56,18),"year"]
+
