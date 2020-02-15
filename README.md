@@ -10,4 +10,4 @@
   
   （2）含“Discussion&Put out&Conclusion”字样的文件为rmarkdown格式，它包含以上全部习题的中文解释、参考代码【与（1）中的代码均相同】、输出结果（用Rstudio打开可见）及分析结论。
   
-  （1）和（2）中所述文件均可下载后用Rstudio打开，由于内容包含中文，请点击菜单栏“File”——“Reopen with Encoding”选择“UTF-8”以避免出现乱码的问题。
+  注：（1）和（2）中所述文件均可下载后用Rstudio打开，由于内容包含中文，请点击菜单栏“File”——“Reopen with Encoding”选择“UTF-8”以避免出现乱码的问题。
