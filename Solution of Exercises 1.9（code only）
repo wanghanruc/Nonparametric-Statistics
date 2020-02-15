@@ -1,1 +1,18 @@
+#Chapter1 Getting Started with R
+#1.9 Exercises
 
+#####1.9.4#####
+set.seed(6666)
+m <- matrix(rt(500*50, 3), ncol = 50)  #生成一个500*50的t分布的随机数的矩阵
+results <- apply(m, 1, function(x) return(c(mean(x), median(x))))  #对每一行分别得到均值和中位数
+e <- var(results[1,])/var(results[2,])  #计算相对效率
+print(e)
+
+
+#####1.9.5#####
+D <- data.frame(y = c("A", "B", "C", "D"), x = c(1, 2, NA, 4)) #设定包含一个空值；若不含空值，以下代码的输出结果均一致
+#分别对比不同代码的输出结果
+summary(D[1:nrow(D), 'x'])
+summary(D[, 'x'])
+summary(D[!is.na(D$x), 1])
+summary(D[rep(TRUE, nrow(D)), 1])
