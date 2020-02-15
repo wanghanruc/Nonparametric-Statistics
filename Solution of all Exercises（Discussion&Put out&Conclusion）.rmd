@@ -1,0 +1,743 @@
+---
+title: "(英文教材)Nonparametric Statistical Methods Using R"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1.9.4
+## 原题释义
+通过模拟，计算当总体服从自由度为3的t分布时，样本中位数较样本均值的相对效率。
+
+## 参考答案
+```{r}
+set.seed(6666)
+m <- matrix(rt(500*50, 3), ncol = 50)  #生成一个500*50的t分布的随机数的矩阵
+results <- apply(m, 1, function(x) return(c(mean(x), median(x)))) #对每一行分别得到均值和中位数
+e <- var(results[1,])/var(results[2,]) #计算相对效率
+print(e)
+```
+结论：中位数的效率较高。
+
+
+## 1.9.5
+## 参考答案
+```{r}
+x<-c(1,2,NA,4,5)
+D<-data.frame(x) #可以设定包含一个空值
+#分别对比不同代码的输出结果
+summary(D[1:nrow(D), 'x'])
+summary(D[, 'x'])
+summary(D[!is.na(D$x), 1])
+summary(D[rep(TRUE, nrow(D)), 1])
+```
+
+
+## 2.8.1
+## 原题释义
+运用模拟的方法，从标准正态分布中每次抽取n=30的样本进行Wilcoxon符号秩检验，分别在显著性水平 α = 0.1,0.05,0.01的条件下，基于对 α 的估计结果，即经验显著性水平，得到 α 的一个95%置信区间。
+
+## 参考答案
+```{r}
+set.seed(666)
+run <- function(alpha, nrep) {
+  result <- list()
+  
+  x <- matrix(rnorm(nrep*30), byrow = T, ncol = 30)  #生成随机数
+  wilcox <- function(d){    #定义一个对向量的函数，使其返回wilcox.test的pvalue
+    out <- wilcox.test(d)
+    return(out$p.value)
+  }
+  out <- apply(x, 1, wilcox)
+  
+  result$alpha <- length(out[out <= alpha]) / nrep #计算出alpha的估计值
+  
+  a <- matrix(sample(out, nrep*1000, replace = T), byrow = T, ncol = nrep) #boostrap重抽样
+  mean_a <- apply(a, 1, function(x) return(length(x[x <= alpha]) / nrep))
+  mean_a <- sort(mean_a)
+  p <- seq(0.001, 1, by = 0.001)
+  result$interval <- c(2*result$alpha - mean_a[which(p == 0.975)], 2*result$alpha - mean_a[which(p == 0.025)]) #得到置信区间
+  return(result)
+}
+
+#分别对alpha = 0.1, 0.05, 0.01运行结果
+a1 <- run(0.1, 1000)
+a2 <- run(0.05, 1000)
+a3 <- run(0.01, 1000)
+
+a1 <- c(a1$alpha, a1$interval[1], a1$interval[2])
+a2 <- c(a2$alpha, a2$interval[1], a2$interval[2])
+a3 <- c(a3$alpha, a3$interval[1], a3$interval[2])
+table <- rbind(a1, a2, a3)
+table <- cbind(c(0.1, 0.05, 0.01), table)
+colnames(table) <- c("alpha", "estimation", "lower", "upper")
+table
+```
+
+
+## 2.8.2
+## 原题释义
+重做2.8.1，标准正态分布变为自由度分别为1,2,3,5,10的t分布。
+
+## 参考答案
+```{r}
+set.seed(666666)
+
+#参数de表示自由度
+run2 <- function(alpha, nrep, de) {
+  result <- list()
+  
+  x <- matrix(rt(nrep*30, de), byrow = T, ncol = 30)  #生成随机数
+  wilcox <- function(d){    #定义一个对向量的函数，使其返回wilcox.test的pvalue
+    out <- wilcox.test(d)
+    return(out$p.value)
+  }
+  out <- apply(x, 1, wilcox)
+  
+  result$alpha <- length(out[out <= alpha]) / nrep #计算出来alpha的估计值
+  
+  a <- matrix(sample(out, nrep*1000, replace = T), byrow = T, ncol = nrep) #boostrap重抽样
+  mean_a <- apply(a, 1, function(x) return(length(x[x <= alpha]) / nrep))
+  mean_a <- sort(mean_a)
+  p <- seq(0.001, 1, by = 0.001)
+  result$interval <- c(2*result$alpha - mean_a[which(p == 0.975)], 2*result$alpha - mean_a[which(p == 0.025)]) #得到置信区间
+  return(result)
+}
+
+#输出结果
+alpha <- vector(length = 5)
+up <- vector(length = 5)
+low <- vector(length = 5)
+table <- NULL
+for(a in c(0.1, 0.05, 0.01)) {
+  i <- 1
+  for(de in c(1,2,3,5,10)){
+    out <- run2(a, 1000, de)
+    alpha[i] <- out$alpha
+    up[i] <- out$interval[2]
+    low[i] <- out$interval[1]
+    i <- i+1
+  }
+  result <- data.frame(alpha = rep(a, 5), degree = c(1,2,3,5,10), estimate = alpha, lower = low, upper = up)
+  table <- rbind(table, result)
+}
+table
+```
+
+
+## 2.8.3
+## 原题释义
+不使用for循环，而是使用apply函数重新实现例2.4.1。
+
+## 参考答案
+```{r}
+set.seed(666666)
+x <- rnorm(25, 30, 5)
+x <- matrix(sample(x, 25*1000, replace = T), byrow =T, ncol = 25)
+xbar <- apply(x, 1, mean)
+
+se.xbar <- sd(xbar)
+se.xbar
+
+tcv <- qt(0.975, length(x) - 1)
+mean(x) + c(-1,1)*tcv*se.xbar
+
+mean(x) + c(-1, 1)*tcv*sd(x)/sqrt(length(x))
+```
+
+
+## 2.8.4
+## 原题释义
+不使用for循环，而是使用apply函数重新实现例2.3.2。
+
+## 参考答案
+```{r}
+n = 30; df = 2; nsims = 10000; mu = .5; 
+collwil = rep(0,nsims) 
+collt = rep(0,nsims)
+
+# Create a matrix of samples from rt(n, df) + mu
+xbar <- matrix((rt(n*nsims, df) + mu), ncol = n)
+
+# write R functions that return the p-value of a test
+wilcox.teststat <- function(x) wilcox.test(x)$p.value
+t.teststat <- function(x) t.test(x)$p.value
+
+# call the function by row
+collwill <- apply(xbar, 1, wilcox.teststat)
+collt <- apply(xbar, 1, t.teststat)
+
+# collwill and collt are series of p-values from the simulation
+powwil = rep(0,nsims); powwil[collwil <= .05] = 1 
+powerwil = sum(powwil)/nsims 
+powt = rep(0,nsims); powt[collt <= .05] = 1 
+powert = sum(powt)/nsims
+```
+
+
+## 2.8.5
+## 原题释义
+一项投票活动共有500人参与，其中269人将票投给候选人P。求参与投票的人中，真正投给P的比例的90%bootstrap置信区间。
+
+## 参考答案
+```{r}
+set.seed(6)
+x <- c(rep(1, 269), rep(0, 500-269))
+run <- function() {
+  x_sample <- matrix(sample(x, 500*1000, replace = T), byrow = T, ncol = 500)  #boostrap重抽样
+  x_barstar <- apply(x_sample, 1, mean)
+  
+  return(quantile(x_barstar, probs = c(0.05, 0.95), type = 1))  #90%置信区间
+}
+run()
+```
+
+
+## 2.8.6
+## 原题释义
+对于例2.3.1，得到治疗效果的90%的双侧置信区间。
+
+## 参考答案
+```{r}
+school<-c(82,69,73,43,58,56,76,65)
+home<-c(63,42,74,37,51,43,80,62)                            
+response <- school - home 
+wilcox.test(response,alternative="two.side",conf.int=TRUE,conf.level = 0.9)
+
+t.test(response,alternative="two.side",conf.int=TRUE,conf.level = 0.9)
+```
+
+
+## 2.8.7
+## 原题释义
+编写一个进行符号分析的R函数。例如，下面的命令计算统计量S+，假设样本在向量x中。
+xt <- x[x != 0];  nt <- length(xt);  ind <- rep(0,nt);  ind[xt > 0] <- 1;  splus <- sum(ind)
+
+## 参考答案
+```{r}
+mySignAnalysis <- function(x, p, alt) {
+  # compute the statistic S+
+  xt <- x[x != 0]
+  nt <- length(xt)
+  ind <- rep(0,nt)
+  ind[xt > 0] <- 1
+  splus <- sum(ind)
+  # use binomial test
+  # return the p-value
+  return (binom.test(splus, nt, p, alternative = alt)$p.value)
+}
+```
+
+
+## 2.8.8
+## 原题释义
+对例2.3.1中的护理学校案例进行符号检验，证明单侧符号检验的p值为0.1445.
+
+## 参考答案
+```{r}
+# using the R function wrote in 2.8.7
+school <- c(82,69,73,43,58,56,76,65)
+home <- c(63,42,74,37,51,43,80,62) 
+response <- school - home
+mySignAnalysis(response, 0.5, "greater")
+```
+
+
+## 2.8.9
+## 原题释义
+数据中存在一处显然的印刷错误，在第8对双胞胎中，在家的双胞胎的分数被打印为82，而原本应为62。在印刷错误的值82下，重新进行Wilcoxon符号秩检验和t检验。
+
+## 参考答案
+```{r}
+school<-c(82,69,73,43,58,56,76,65)
+home<-c(63,42,74,37,51,43,80,82)                            # 最后一个数据由62改为82
+response <- school - home 
+wilcox.test(response,alternative="greater",conf.int=TRUE)   # signed-rank Wilcoxon检验
+
+t.test(response,alternative="greater",conf.int=TRUE)        # t检验
+
+```
+
+
+## 2.8.10
+## 原题释义
+有一个标准化的变量X，其分布可表示为，其中0≦ε﹤1，服从n=1且成功概率为ε的二项分布，Z服从标准正态分布，c>1，且和Z为独立的随机变量。当从X的分布中抽样时，有的观测是由分布N(0,1)生成的，但的观测是由分布N(0,c2)生成的，而后者的观测大多为异常值。我们称X服从分布CN(c,ε)。
+1.使用R函数中的rbinom和rnorm，自行编写一个函数，从分布CN(c,ε)中抽取样本量为n的随机样本；
+2.从分布N(0,1)和CN(16,0.25)中各抽取样本量为100的样本，分别画出样本的直方图和箱线图，比较结果。
+
+## 参考答案
+```{r}
+#第一问#
+rcnorm=function(c,epsilon,n){
+  i=rbinom(n,1,epsilon)
+  z=rnorm(n)
+  (1-i)*z+c*i*z
+}
+#第二问#
+sample1<-rnorm(100)
+sample2<-rcnorm(16,0.25,100)
+par(mfrow=c(1,2))
+hist(sample1,main = "Histogram of N(0,1)");
+hist(sample2,main = "Histogram of CN(16,0.25)")
+```
+
+
+## 2.8.11
+## 原题释义
+当总体服从分布CN(16,0.25)时实现例2.3.2的模拟实验。对于备择假设，选择θ值使得wilcoxon符号秩检验的经验势在0.05到0.90之间。
+
+## 参考答案
+```{r}
+#2.8.11
+#编写函数生成一个带污染比例和污染强度的样本
+rCN <- function(n,c,eps)
+{
+  label <- sample(c(1,0),n,T,c(eps,1-eps)) # 生成成功概率ε=eps的伯努利变量
+  n.norm=sum(label)
+  n.cont=n-sum(label)
+  simdata=c(rnorm(n.norm),rnorm(n.cont)*c)
+  return(simdata)
+}
+
+#备择假设 theta 变化的时候输出经验power
+n = 100; #每次实验样本量
+nsims = 5000;#计算经验势所需要的实验次数
+eps = 0.25 ; #污染系数
+Theta=seq(0.05,5,0.1)
+n.Theta=length(Theta)
+Powerwil=NULL#存贮9次实验结果
+for (j in 1:n.Theta)
+{
+  collwil = rep(0,nsims); #存储变量：存储wilcoxon的p-值
+  for(i in 1:nsims)
+  {
+    theta=Theta[j]
+    x = rCN(n,16,0.25)+theta
+    wil = wilcox.test(x)
+    collwil[i] = wil$p.value
+  }
+
+  powwil = rep(0,nsims);
+  powwil[collwil <= .05] = 1
+  powerwil = sum(powwil)/nsims
+  Powerwil=c(Powerwil,powerwil)
+}
+Powerwil
+```
+结论：使wilcoxon符号秩检验的经验势在0.05到0.90之间的θ值取值在0.05到5之间。
+
+
+## 2.8.12
+## 原题释义
+两个估计量置信区间长度的平方的期望之比，是度量这两个估计量的效率高低的指标。通过10000次模拟，每次样本量为30，分别在总体服从N(0,1)和服从自由度为2的t分布时，比较Hodges–Lehmann统计量和样本均值的效率（95%置信区间）。
+
+## 参考答案
+```{r}
+# 总体服从标准正态分布
+W2<-c()                       # 储存Hodges–Lehmann统计量置信区间长度的平方
+T2<-c()                       # 储存t统计量置信区间长度的平方
+for (i in 1:10000) {
+  x1<-rnorm(30,0,1)
+  w<-wilcox.test(x1,conf.int=TRUE)
+  t<-t.test(x1,conf.int=TRUE)
+  W2[i]<-((w$conf.int)[2]-(w$conf.int)[1])^2
+  T2[i]<-((t$conf.int)[2]-(t$conf.int)[1])^2
+}
+mean(W2)/mean(T2)   
+
+#总体服从自由度为2的t分布
+W2<-c()                       # 储存Hodges–Lehmann统计量置信区间长度的平方
+T2<-c()                       # 储存t统计量置信区间长度的平方
+for (i in 1:10000) {
+  x1<-rt(30,2)
+  w<-wilcox.test(x1,conf.int=TRUE)
+  t<-t.test(x1,conf.int=TRUE)
+  W2[i]<-((w$conf.int)[2]-(w$conf.int)[1])^2
+  T2[i]<-((t$conf.int)[2]-(t$conf.int)[1])^2
+}
+mean(W2)/mean(T2)            # 计算置信区间长度平方的期望之比
+```
+
+
+## 2.8.14
+## 参考答案
+## (a)
+```{r}
+pbinom(16,75,0.3)
+
+#或者使用经验估计法
+p.a <- function(){
+  set.seed(888888)
+  nrep <- 10000
+  out <- vector(length = nrep)
+  for(i in 1:nrep){
+    x <- rbinom(75, 1, 0.3)
+    if(sum(x) <= 16){
+      out[i] <- 1
+    } else {
+      out[i] <- 0
+    }
+  }
+  return(sum(out)/nrep)
+}
+p.a()
+```
+
+## (b)
+```{r}
+N=75#试验次数
+# n = 100; #每次实验样本量
+nsims = 10000;#计算经验势所需要的实验次数
+p = 0.25 ; #真值
+x = rbinom(nsims,75,0.25)
+sum(x<16)/nsims
+```
+
+## (c)
+```{r}
+set <- seq(0.02,0.35,by = 0.01)
+Power<-NULL
+
+for(i in 1:length(set))
+{
+  p =set[i] ; #真值
+  x = rbinom(nsims,75,p)
+  power=sum(x<16)/nsims
+  Power=c(Power,power)
+}
+
+plot(set,Power,type="n")
+lines(set,Power)
+```
+
+
+## 3.7.1
+## 参考答案
+```{r message=FALSE, warning=FALSE}
+library(Rfit)
+x = baseball[baseball$field==0,1]
+y = baseball[baseball$field==1,1]
+wilcox.test(x,y)
+```
+
+
+## 3.7.3
+## 原题释义
+验证两个检验的等价性（检验结果一致，p值相等）。
+
+## 参考答案
+```{r message=FALSE, warning=FALSE}
+#数据quail2不存在，x和y分别用quail中的treat=1和treat=2代替
+library(Rfit)
+library(npsm)
+data <- quail2
+x <- data[data[[1]]==1, 2]
+y <- data[data[[1]]==0 ,2]
+
+#wilcox.testx(x,y)计算统计量T+并返回检验的p值
+#注意：参数correct=FALSE
+wilcox.test(x, y, exact = FALSE,correct=FALSE)
+```
+```{r}
+#rank.test(x,y)使用统计量T和p值
+rank.test(x,y)
+```
+
+
+## 3.7.4
+## 原题释义
+令T=logS，其中S服从自由度为v1,v2的F分布。
+(a)从分布logF(1,0.25)中生成两个n=20的样本，其中一个样本增加delta=7的位置偏移。
+(b)画出两个样本的对比点图。
+(c)得到delta的LS,Wilcoxon和bentscores1的估计，以及对应的标准误。
+
+## 参考答案
+## (a)&(b)
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+set.seed(666)
+x <- log(rf(20,1,.25)) 
+y <- log(rf(20,1,.25)) + 7.0
+z = c(rep("x",20),rep("y",20))
+mydata = data.frame(dat = c(x,y),z) # 构造一个数据框，方便作图
+ggplot(data = mydata, aes(x = z,y = dat))+geom_dotplot(binaxis='y', stackdir='center')# 画出点图
+
+```
+
+## (c)
+```{r}
+z = c(rep(1,20),rep(2,20))
+mydata = data.frame(dat = c(x,y),z)   # Wilcoxon
+fit<-rfit(dat~z,data=mydata) 
+coef(summary(fit))
+```
+```{r}
+fits<-rfit(dat~z,data=mydata,scores = bentscores1)  # bentscores1
+coef(summary(fits))
+```
+```{r}
+fitlm<-lm(dat~z,data=mydata)   # LS
+coef(summary(fitlm))
+```
+
+
+## 4.9.10
+## 原题释义
+(a)画出散点图。基于图像判断简单线性回归模型是否合适？
+(b)通过拟合的残差图来展示线性回和二次多项式回归不合适，但三次模型合适。
+(c)使用函数ploydeg，设置阶数上限为5，来决定多项式的阶数；并和(b)中的结果进行对比。
+
+## 参考答案
+## (a)
+```{r}
+library(npsm)
+data(cloud)
+plot(cloud)
+```
+
+## (b)
+```{r}
+fit1 <- rfit(cloud.point ~ I8, data = cloud) #简单线性
+fit2 <- rfit(cloud.point ~ I8 + I(I8^2), data = cloud) #二阶
+fit3 <- rfit(cloud.point ~ I8 + +I(I8^2) + I(I8^3), data = cloud)#三阶
+#作图
+rs = rstudent(fit1); yhat = fitted.values(fit1); plot(yhat, rs, main = "linear")
+```
+```{r}
+rs = rstudent(fit2); yhat = fitted.values(fit2); plot(yhat, rs, main = "quadratic polynomials")
+```
+```{r}
+rs = rstudent(fit3); yhat = fitted.values(fit3); plot(yhat, rs, main = "cubic polynomials")
+```
+
+## (c)
+```{r}
+deg <- polydeg(cloud$cloud.point, cloud$I8, 5, .05)
+deg$coll
+```
+结论：(a)中的散点图呈现出的趋势更像是一条曲线，简单线性回归可能不适用；
+(b)中的残差散点图可以看出，简单线性回归和二阶多项式回归没有很好地符合随机误差的形式，呈现出一定的分布特点；而三阶多项式回归误差基本随机分布；
+(c)polydeg函数选择的degree为3，这与(2)中的结果是一致的。
+
+
+## 4.9.11
+## 原题释义
+利用energy dataset的数据：
+(a)画散点图，判断多项式回归可能的阶数；
+(b)利用polydeg函数，设定最大阶数为6，来决定多项式阶数；
+(c)基于残差分析，判断(b)中的模型拟合的优劣。
+
+## 参考答案
+## (a)
+```{r}
+data(energy)
+plot(energy$temp.diff, energy$output)
+```
+结论：从散点图判断，可能的阶数为2或3；
+
+## (b)
+```{r}
+deg <- polydeg(energy$output, energy$temp.diff, 6, .05)
+deg$coll
+```
+结论：ploydeg函数选择最优阶数为3；
+
+## (c)
+```{r}
+summary(deg$fitf)
+```
+```{r}
+#作出拟合图观察
+plot(energy$temp.diff, energy$output)
+lines(energy$temp.diff, fitted.values(deg$fitf))
+```
+```{r}
+#作出学生化残差图观察
+rs = rstudent(deg$fitf); yhat = fitted.values(deg$fitf); plot(yhat, rs)
+```
+结论：从两张图判断，该模型拟合的情况较好，且残差项基本符合随机分布，可以认为(b)中得到的模型是一个好的模型。
+
+
+## 4.9.13
+## 原题释义
+利用weather dataset的数据：
+(a)画出降雪量-年份的散点图，找出降雪量最大和最小的年份；
+(b)作出local LS和稳健loess拟合，比较结果；
+(c)对稳健loess模型作残差分析；
+(d)对(c)中残差作箱线图，识别出年份异常值。
+
+## 参考答案
+## (a)
+```{r}
+data("weather")
+plot(weather[,"year"], weather[,"totalsnow"], xlab = "year", ylab = "totalsnow")
+```
+```{r}
+weather[which.min(weather[,"totalsnow"]),"year"] #降雪量最小
+```
+```{r}
+weather[which.max(weather[,"totalsnow"]),"year"] #降雪量最大
+```
+
+## (b)
+```{r}
+dat = data.frame("year" = weather[,"year"], "totalsnow" = weather[,"totalsnow"])
+dat = na.omit(dat)
+#Local LS Fit
+fit1 = loess(totalsnow ~ year, data = dat)
+#Robust loess
+fit2 = loess(totalsnow ~ year, data = dat, family = "symmetric")
+
+#作图比较
+plot(weather[,"year"], weather[,"totalsnow"], xlab = "year", ylab = "totalsnow")
+lines(dat$year, fitted.values(fit1))
+lines(dat$year, fitted.values(fit2), lty = 2)
+legend("topleft", legend = c('Local LS Fit','Robust losess Fit'),lty=c(1,2))
+```
+
+## (c)
+```{r}
+Loess.residual = fit2$residuals; Loess.fit = fitted.values(fit2); plot(Loess.fit, Loess.residual)
+```
+
+## (d)
+```{r}
+boxplot(Loess.residual)
+```
+```{r}
+#找出三个outliner
+Loess.residual[order(-Loess.residual)][1:3]
+```
+```{r}
+weather[c(17,56,18),"year"]
+```
+
+
+## 7.9.1
+## 原题释义
+观察高杠杆“坏”点对拟合的影响。
+## 参考答案
+## (a)
+```{r message=FALSE, warning=FALSE}
+x = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20)
+y = c(5, 7, 6, 14, 14, 25, 29, 33, 31, 41, 75)
+y2 = c(5, 7, 6, 14, 14, 25, 29, 33, 31, 41, 20)
+
+library(hbrfit)
+library(quantreg)
+wilfit = rfit.default(y~x)
+HBRfit = hbrfit(formula = y~x)
+summary(wilfit)
+summary(HBRfit)
+```
+```{r}
+plot(x,y)
+abline(wilfit, lwd=4, col="green")
+abline(HBRfit, lwd=1, col="red")
+legend("bottomright",legend = c("wilfit","hbrfit"), col = c("green","red"), lty=1,lwd=2)
+```
+
+## (b)
+```{r}
+wilfit = rfit.default(y2~x)
+HBRfit = hbrfit(formula = y2~x)
+summary(wilfit)
+summary(HBRfit)
+```
+```{r}
+plot(x,y2)
+abline(wilfit, lwd=4, col="green")
+abline(HBRfit, lwd=1, col="red")
+legend("bottomright",legend = c("wilfit","hbrfit"), col = c("green","red"), lty=1,lwd=2)
+```
+
+
+## 7.9.3
+## 原题释义
+验证当数据是没有高杠杆异常点的“好”数据时，HBR fit 比 Wilcoxon fit效率较低。模拟实验10000次，j证明参数估计的方差HBRfit比Wilcoxonfit更大(relative efficiency)。
+
+## 参考答案
+```{r message=FALSE, warning=FALSE}
+set.seed(123)
+m = 10000
+x = 1:20
+b_h = c()
+b_w = c()
+for(i in 1:m)
+{
+  e = rnorm(20,0,25)
+  y = 4*x+e
+  wilfit = rfit.default(y~x)
+  HBRfit = hbrfit(formula = y~x)
+  b_w = c(b_w, wilfit$coefficients[2])  # 取出系数的估计值
+  b_h = c(b_h, HBRfit$coefficients[2])
+}
+var(b_h)/var(b_w)
+```
+
+
+## 7.9.4
+## 原题释义
+使用7.9.3中的参数设定，验证wilcoxon和hbr拟合参数beta1的95%的置信区间的准确性。
+
+## 参考答案
+```{r message=FALSE, warning=FALSE}
+library(hbrfit)
+library(quantreg)
+
+set.seed(123)
+m = 10000
+x = 1:20
+h = c()      # 记录是否正确的向量，正确为1，错误为0
+w = c()
+t = 2.101    # 18个自由度下，t分布的97.5%分位数大致为2.101
+Lxx = 19*var(x)
+
+low = c()
+up = c()
+
+for(i in 1:m)
+{
+  e = rnorm(20,0,25)
+  y = 4*x+e
+  wilfit = rfit.default(y~x)
+  HBRfit = hbrfit(formula = y~x)
+  b_w = wilfit$coefficients[2]  # 取出系数的估计值
+  b_h = HBRfit$coefficients[2]
+  sd_y = sd(y)
+  
+  low = c(low,b_w-sd_y/sqrt(Lxx))
+  up = c(up,b_w+sd_y/sqrt(Lxx))
+  
+  if(abs(4-b_w)<t*sd_y/sqrt(Lxx)) # 计算真实值是否在置信区间内,是赋值为1，不是赋值为0
+    w=c(w,1)
+  else
+    w = c(w,0)
+  
+  if(abs(4-b_h)<t*sd_y/sqrt(Lxx))
+    h = c(h,1)
+  else
+    h = c(h,0)
+}
+
+hhhhh = data.frame(low=low,up = up)
+mean(h)   # HBR ﬁts对于β1参数估计95%置信区间的正确性
+mean(w)   # Wil ﬁts对于β1参数估计95%置信区间的正确性
+```
+
+
+## 7.9.4补充练习
+画图：模拟100次，画出每次的置信区间（竖线），观察有多少置信区间正确地包括了真值。
+```{r}
+plot(0, xlim=c(0, 100), ylim=c(min(hhhhh)-0.2, max(hhhhh)+0.2), type="n")
+for (i in 1:100) {
+  if(hhhhh[i, 1]>4|hhhhh[i, 2]<4)
+    lines(x=rep(i, 2), y=c(hhhhh[i, 1], hhhhh[i, 2]),col = "red")
+  else
+    lines(x=rep(i, 2), y=c(hhhhh[i, 1], hhhhh[i, 2]))
+}
+abline(h=4)
+```
+
