@@ -1,13 +1,28 @@
-# Nonparametric-Statistical-Methods-Using-R
+# 非参数统计课程习题及参考答案
 
-  目录中的文件为英文教材《Nonparametric Statistical Methods Using R》的部分习题及其参考答案，主要分为两个部分：
+  目录中的文件为英文教材《Nonparametric Statistical Methods Using R》和中文教材《非参数统计》的部分习题及其参考答案。
   
-  一、题目部分：“Exercises”开头的pdf文件为各章节的部分英文原题；
+  一、英文命名的文件为英文教材的习题及参考答案，分为两个部分：
   
-  二、参考答案部分：“Solution”开头的文件为对应各章习题的参考答案，其中：
+    1.题目部分：“Exercises”开头的pdf文件为各章节的部分英文原题；
   
-  （1）含“（code only）”字样的文件为对应各章的解题参考代码；
+    2.参考答案部分：“Solution”开头的文件为对应各章习题的参考答案，其中：
   
-  （2）含“Discussion&Put out&Conclusion”字样的文件为rmarkdown格式，它包含以上全部习题的中文解释、参考代码【与（1）中的代码均相同】、输出结果及分析结论。
+      （1）含“（code only）”字样的文件为对应各章的解题参考代码；
   
-  注：（1）和（2）中所述文件均可下载后用Rstudio打开，由于内容包含中文，请点击菜单栏“File”——“Reopen with Encoding”选择“UTF-8”以避免出现乱码的问题。
+      （2）含“Discussion&Put out&Conclusion”字样的文件为rmarkdown格式，它包含以上全部习题的中文解释、参考代码【与（1）中的代码均相同】、输出结果及分析结论。
+  
+  二、中文命名的文件为中文教材的习题及参考答案，同样分为两个部分：
+  
+    1.题目部分：pdf文件为各章节的部分原题；
+
+    2.参考答案部分：
+
+      （1）含“（code only）”字样的文件为对应各题的解题参考代码；
+
+      （2）含“解题思路&输出&结论”字样的文件为rmarkdown格式，它包含以上全部习题的中文解释、参考代码【与（1）中的代码均相同】、输出结果及分析结论。
+  
+  
+ 注：上述非pdf格式的文件均可下载后用Rstudio打开，由于内容包含中文，请点击菜单栏“File”——“Reopen with Encoding”选择“UTF-8”以避免出现乱码的问题。
+ 
+ 
